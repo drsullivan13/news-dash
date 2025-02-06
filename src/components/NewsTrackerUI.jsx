@@ -4,10 +4,10 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
-import { X, Plus, Search, Newspaper, Calendar, ExternalLink } from 'lucide-react';
+import { X, Plus, Search, Newspaper, Calendar, ExternalLink, Clock, AlertCircle } from 'lucide-react';
+import axios from 'axios';
 
 const NewsTrackerUI = () => {
-  // State management
   const [companies, setCompanies] = useState(['Expedia']);
   const [newCompany, setNewCompany] = useState('');
   const [timeRange, setTimeRange] = useState('30');
@@ -15,21 +15,49 @@ const NewsTrackerUI = () => {
   const [selectedSources, setSelectedSources] = useState([]);
   const [availableSources, setAvailableSources] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // Handle API key - in production, use environment variables
-  const API_KEY = 'your-api-key';
+  const [error, setError] = useState(null);
 
   const fetchNews = async () => {
     setLoading(true);
+    setError(null);
+
     try {
-      // Replace with actual NewsAPI call
-      setLoading(false);
+      const response = await axios.post('/api/news', {
+        companies,
+        timeRange: parseInt(timeRange),
+        sources: selectedSources
+      });
+
+      const { data } = response.data;
+      
+      setArticles(data.articles);
+      setAvailableSources(data.metadata.sources);
+
     } catch (error) {
       console.error('Error fetching news:', error);
+      setError(error.response?.data?.error || 'Failed to fetch news articles');
+    } finally {
       setLoading(false);
     }
   };
 
+  // Format date to local string
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Add company to tracking list
   const addCompany = () => {
     if (newCompany && !companies.includes(newCompany)) {
       setCompanies([...companies, newCompany]);
@@ -37,156 +65,206 @@ const NewsTrackerUI = () => {
     }
   };
 
+  // Remove company from tracking list
   const removeCompany = (companyToRemove) => {
     setCompanies(companies.filter(company => company !== companyToRemove));
   };
 
+  // Toggle source selection
   const toggleSource = (source) => {
-    if (selectedSources.includes(source)) {
-      setSelectedSources(selectedSources.filter(s => s !== source));
-    } else {
-      setSelectedSources([...selectedSources, source]);
-    }
+    setSelectedSources(prev => 
+      prev.includes(source) 
+        ? prev.filter(s => s !== source)
+        : [...prev, source]
+    );
   };
 
+  // Filter articles based on selected sources
   const filteredArticles = articles.filter(article => 
-    selectedSources.length === 0 || selectedSources.includes(article.source)
+    selectedSources.length === 0 || selectedSources.includes(article.source.name)
+  );
+
+  // Error display component
+  const ErrorDisplay = ({ message }) => (
+    <Card className="bg-red-50 border-red-200">
+      <CardContent className="p-4 flex items-center text-red-700">
+        <AlertCircle className="h-5 w-5 mr-2" />
+        {message}
+      </CardContent>
+    </Card>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="bg-white shadow-lg">
-          <CardHeader className="border-b border-gray-200">
-            <CardTitle className="text-2xl font-bold text-gray-900">News Tracker</CardTitle>
-          </CardHeader>
-          
-          <CardContent className="space-y-6 pt-6">
-            {/* Company Input Section */}
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <Input
-                  value={newCompany}
-                  onChange={(e) => setNewCompany(e.target.value)}
-                  placeholder="Enter company name"
-                  className="flex-1"
-                  onKeyPress={(e) => e.key === 'Enter' && addCompany()}
-                />
-                <Button 
-                  onClick={addCompany}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Company
-                </Button>
-              </div>
-              
-              {/* Company Tags */}
-              <div className="flex flex-wrap gap-2">
-                {companies.map(company => (
-                  <Badge 
-                    key={company} 
-                    variant="secondary"
-                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200"
-                  >
-                    {company}
-                    <X 
-                      className="h-4 w-4 ml-2 cursor-pointer hover:text-red-500" 
-                      onClick={() => removeCompany(company)}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
+            News Tracker
+          </h1>
+          <p className="text-gray-600 mt-2">Track news for your favorite companies</p>
+        </div>
+
+        {/* Error Display */}
+        {error && <ErrorDisplay message={error} />}
+
+        {/* Main Content */}
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* Search Panel */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="backdrop-blur-xl bg-white/50 shadow-xl border-0">
+              <CardContent className="p-6">
+                {/* Company Input */}
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Input
+                      value={newCompany}
+                      onChange={(e) => setNewCompany(e.target.value)}
+                      placeholder="Add company..."
+                      className="pr-20 bg-white/70"
+                      onKeyPress={(e) => e.key === 'Enter' && addCompany()}
                     />
-                  </Badge>
-                ))}
-              </div>
-
-              {/* Search Controls */}
-              <div className="flex gap-4 items-center">
-                <Select value={timeRange} onValueChange={setTimeRange}>
-                  <SelectTrigger className="w-48">
-                    <Calendar className="h-4 w-4 mr-2 opacity-50" />
-                    <SelectValue placeholder="Select time range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">Last 7 days</SelectItem>
-                    <SelectItem value="30">Last 30 days</SelectItem>
-                    <SelectItem value="90">Last 90 days</SelectItem>
-                    <SelectItem value="180">Last 180 days</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button 
-                  onClick={fetchNews} 
-                  disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  {loading ? 'Searching...' : 'Search News'}
-                </Button>
-              </div>
-            </div>
-
-            {/* Source Filters */}
-            {availableSources.length > 0 && (
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">News Sources</h3>
-                <div className="flex flex-wrap gap-2">
-                  {availableSources.map(source => (
-                    <Badge
-                      key={source}
-                      variant={selectedSources.includes(source) ? "default" : "outline"}
-                      className="cursor-pointer px-3 py-1"
-                      onClick={() => toggleSource(source)}
+                    <Button 
+                      onClick={addCompany}
+                      className="absolute right-1 top-1 h-8 w-16 bg-blue-600 hover:bg-blue-700"
                     >
-                      <Newspaper className="h-3 w-3 mr-1" />
-                      {source}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-            {/* Results Section */}
-            <div className="space-y-4 pt-4 border-t border-gray-200">
+                  {/* Company Tags */}
+                  <div className="flex flex-wrap gap-2">
+                    {companies.map(company => (
+                      <Badge 
+                        key={company} 
+                        className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer group"
+                      >
+                        {company}
+                        <X 
+                          className="h-4 w-4 ml-2 opacity-50 group-hover:opacity-100" 
+                          onClick={() => removeCompany(company)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Time Range */}
+                  <Select value={timeRange} onValueChange={setTimeRange}>
+                    <SelectTrigger className="w-full bg-white/70">
+                      <Clock className="h-4 w-4 mr-2 opacity-50" />
+                      <SelectValue placeholder="Time range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">Last 7 days</SelectItem>
+                      <SelectItem value="30">Last 30 days</SelectItem>
+                      <SelectItem value="90">Last 90 days</SelectItem>
+                      <SelectItem value="180">Last 180 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Search Button */}
+                  <Button 
+                    onClick={fetchNews} 
+                    disabled={loading || companies.length === 0}
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
+                  >
+                    {loading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Searching...
+                      </div>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4 mr-2" />
+                        Search News
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sources Filter */}
+            {availableSources.length > 0 && (
+              <Card className="backdrop-blur-xl bg-white/50 shadow-xl border-0">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">News Sources</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSources.map(source => (
+                      <Badge
+                        key={source}
+                        variant={selectedSources.includes(source) ? "default" : "outline"}
+                        className="cursor-pointer px-3 py-1.5 transition-all"
+                        onClick={() => toggleSource(source)}
+                      >
+                        <Newspaper className="h-3 w-3 mr-1.5" />
+                        {source}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Results Panel */}
+          <div className="lg:col-span-8">
+            <div className="space-y-4">
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Fetching news...</p>
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Searching for articles...</p>
+                  </div>
                 </div>
               ) : filteredArticles.length > 0 ? (
-                filteredArticles.map((article, index) => (
-                  <Card key={index} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-2">{article.title}</h3>
-                          <p className="text-sm text-gray-600 mb-3">{article.description}</p>
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary" className="bg-gray-100">
-                              <Newspaper className="h-3 w-3 mr-1" />
-                              {article.source}
-                            </Badge>
-                            <span className="text-sm text-gray-500">{article.date}</span>
-                          </div>
+                filteredArticles.map((article) => (
+                  <Card 
+                    key={article.id} 
+                    className="backdrop-blur-xl bg-white/50 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <h3 className="text-xl font-semibold text-gray-900">{article.title}</h3>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => window.open(article.url, '_blank')}
+                            className="flex-shrink-0 hover:bg-blue-50"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => window.open(article.url, '_blank')}
-                          className="flex-shrink-0"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Read More
-                        </Button>
+                        <p className="text-gray-600">{article.description}</p>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Badge className="bg-blue-50 text-blue-700">
+                            <Newspaper className="h-3 w-3 mr-1.5" />
+                            {article.source.name}
+                          </Badge>
+                          <Badge variant="outline">
+                            {article.company}
+                          </Badge>
+                          <span className="text-sm text-gray-500 flex items-center">
+                            <Calendar className="h-3 w-3 mr-1.5" />
+                            {formatDate(article.publishedAt)}
+                          </span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No articles found. Try adjusting your search criteria.
-                </div>
+                <Card className="backdrop-blur-xl bg-white/50 border-0 shadow-xl">
+                  <CardContent className="p-12 text-center">
+                    <Newspaper className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No articles found</h3>
+                    <p className="text-gray-600">Try adjusting your search criteria or adding more companies.</p>
+                  </CardContent>
+                </Card>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
