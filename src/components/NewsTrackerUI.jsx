@@ -10,7 +10,7 @@ import api from '../lib/axios';
 const NewsTrackerUI = () => {
   const [companies, setCompanies] = useState(['']);
   const [newCompany, setNewCompany] = useState('');
-  const [timeRange, setTimeRange] = useState('30');
+  const [timeRange, setTimeRange] = useState('7');
   const [articles, setArticles] = useState([]);
   const [selectedSources, setSelectedSources] = useState([]);
   const [availableSources, setAvailableSources] = useState([]);
@@ -156,9 +156,9 @@ const NewsTrackerUI = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="7">Last 7 days</SelectItem>
-                      <SelectItem value="30">Last 30 days</SelectItem>
-                      <SelectItem value="90">Last 90 days</SelectItem>
-                      <SelectItem value="180">Last 180 days</SelectItem>
+                      <SelectItem value="14">Last 2 weeks</SelectItem>
+                      <SelectItem value="21">Last 3 weeks</SelectItem>
+                      <SelectItem value="30">Last month</SelectItem>
                     </SelectContent>
                   </Select>
 
