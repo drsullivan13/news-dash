@@ -5,10 +5,10 @@ import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
 import { X, Plus, Search, Newspaper, Calendar, ExternalLink, Clock, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../lib/axios';
 
 const NewsTrackerUI = () => {
-  const [companies, setCompanies] = useState(['Expedia']);
+  const [companies, setCompanies] = useState(['']);
   const [newCompany, setNewCompany] = useState('');
   const [timeRange, setTimeRange] = useState('30');
   const [articles, setArticles] = useState([]);
@@ -22,7 +22,7 @@ const NewsTrackerUI = () => {
     setError(null);
 
     try {
-      const response = await axios.post('/api/news', {
+      const response = await api.post('/api/news', {
         companies,
         timeRange: parseInt(timeRange),
         sources: selectedSources
