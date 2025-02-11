@@ -1,4 +1,4 @@
-import NewsTrackerUI from './components/NewsTrackerUI'
+import NewsTrackerUI from './components/NewsTrackerUIv2'
 
 function App() {
   return (
