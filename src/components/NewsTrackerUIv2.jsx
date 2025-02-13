@@ -11,6 +11,12 @@ import {
 } from "./ui/select";
 import { Badge } from "./ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
+import {
   X,
   Plus,
   Search,
@@ -21,7 +27,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Globe
+  Globe,
 } from "lucide-react";
 import api from "../lib/axios";
 
@@ -203,6 +209,23 @@ const NewsTrackerUI = () => {
       prev.includes(domain.value)
         ? prev.filter((d) => d !== domain.value)
         : [...prev, domain.value]
+    );
+  };
+
+  const handleGoogleSearch = (article) => {
+    const searchQuery = encodeURIComponent(
+      `${article.title} ${article.source.name}`
+    );
+    const googleSearchUrl = `https://www.google.com/search?q=${searchQuery}`;
+    window.open(googleSearchUrl, "_blank");
+  };
+
+  // Function to determine if we should show Google search button
+  const shouldShowGoogleSearch = (article) => {
+    console.log(`ARTICLE: ${article}`);
+    return (
+      article.url.includes("consent.yahoo.com") ||
+      article.source.name.toLowerCase().includes("yahoo")
     );
   };
 
@@ -413,13 +436,50 @@ const NewsTrackerUI = () => {
                             <h3 className="text-xl font-semibold text-gray-900">
                               {article.title}
                             </h3>
-                            <Button
-                              variant="outline"
-                              onClick={() => window.open(article.url, "_blank")}
-                              className="flex-shrink-0 hover:bg-blue-50"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2 flex-shrink-0">
+                              <TooltipProvider delayDuration={150} skipDelayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() =>
+                                        window.open(article.url, "_blank")
+                                      }
+                                      className="flex-shrink-0 hover:bg-blue-50"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Open Article</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                {shouldShowGoogleSearch(article) && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleGoogleSearch(article)
+                                        }
+                                        className="flex-shrink-0 hover:bg-blue-50 group"
+                                      >
+                                        <svg
+                                          viewBox="0 0 24 24"
+                                          className="h-4 w-4 group-hover:text-blue-600"
+                                          fill="currentColor"
+                                        >
+                                          <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
+                                        </svg>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Search in Google</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </TooltipProvider>
+                            </div>
                           </div>
                           <p className="text-gray-600">{article.description}</p>
                           <div className="flex items-center gap-3 flex-wrap">
