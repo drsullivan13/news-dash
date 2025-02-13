@@ -21,6 +21,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Globe
 } from "lucide-react";
 import api from "../lib/axios";
 
@@ -33,12 +34,16 @@ const NewsTrackerUI = () => {
   const [availableSources, setAvailableSources] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Add pagination state
+  const [selectedDomains, setSelectedDomains] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalArticles, setTotalArticles] = useState(0);
+
   const articlesPerPage = 20;
+  const domains = [
+    { label: "MarketWatch", value: "marketwatch.com" },
+    { label: "Yahoo", value: "yahoo.com" },
+  ];
 
   const fetchNews = async (page = 1) => {
     setLoading(true);
@@ -49,6 +54,7 @@ const NewsTrackerUI = () => {
         companies,
         timeRange: parseInt(timeRange),
         sources: selectedSources,
+        domains: selectedDomains,
         page,
         pageSize: articlesPerPage,
       });
@@ -118,7 +124,7 @@ const NewsTrackerUI = () => {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    console.log('TOTAL PAGES', totalPages)
+    console.log("TOTAL PAGES", totalPages);
 
     // If we have 7 or fewer pages, show all of them
     if (totalPages <= 7) {
@@ -191,6 +197,14 @@ const NewsTrackerUI = () => {
       selectedSources.length === 0 ||
       selectedSources.includes(article.source.name)
   );
+
+  const toggleDomain = (domain) => {
+    setSelectedDomains((prev) =>
+      prev.includes(domain.value)
+        ? prev.filter((d) => d !== domain.value)
+        : [...prev, domain.value]
+    );
+  };
 
   // Error display component
   const ErrorDisplay = ({ message }) => (
@@ -271,6 +285,59 @@ const NewsTrackerUI = () => {
                       <SelectItem value="30">Last month</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Domain Filter */}
+                  <div className="space-y-2 mt-4">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Globe className="h-4 w-4 opacity-50" />
+                      Filter by Domains
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {domains.map((domain) => (
+                        <Badge
+                          key={domain.value}
+                          variant={
+                            selectedDomains.includes(domain.value)
+                              ? "default"
+                              : "outline"
+                          }
+                          className="cursor-pointer px-3 py-1.5 transition-all hover:bg-blue-50"
+                          onClick={() => toggleDomain(domain)}
+                        >
+                          <Globe className="h-3 w-3 mr-1.5" />
+                          {domain.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Selected Domains Summary */}
+                  {selectedDomains.length > 0 && (
+                    <div className="mt-4">
+                      <div className="text-sm text-gray-500">
+                        Selected Domains: {selectedDomains.length}
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedDomains.map((domain) => {
+                          const domainInfo = domains.find(
+                            (d) => d.value === domain
+                          );
+                          return (
+                            <Badge
+                              key={domain}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer group"
+                            >
+                              {domainInfo?.label}
+                              <X
+                                className="h-4 w-4 ml-2 opacity-50 group-hover:opacity-100"
+                                onClick={() => toggleDomain(domainInfo)}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Search Button */}
                   <Button
@@ -356,10 +423,6 @@ const NewsTrackerUI = () => {
                           </div>
                           <p className="text-gray-600">{article.description}</p>
                           <div className="flex items-center gap-3 flex-wrap">
-                            <Badge className="bg-blue-50 text-blue-700">
-                              <Newspaper className="h-3 w-3 mr-1.5" />
-                              {article.source.name}
-                            </Badge>
                             <Badge className="bg-blue-50 text-blue-700">
                               <Newspaper className="h-3 w-3 mr-1.5" />
                               {article.source.name}
