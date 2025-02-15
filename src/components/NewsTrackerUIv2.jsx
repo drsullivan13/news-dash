@@ -16,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+import ExportButton from "./ui/export-button";
 import {
   X,
   Plus,
@@ -380,6 +381,12 @@ const NewsTrackerUI = () => {
                       </>
                     )}
                   </Button>
+                  {articles.length > 0 && (
+                    <ExportButton
+                      articles={filteredArticles}
+                      companies={companies}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -437,7 +444,10 @@ const NewsTrackerUI = () => {
                               {article.title}
                             </h3>
                             <div className="flex gap-2 flex-shrink-0">
-                              <TooltipProvider delayDuration={150} skipDelayDuration={0}>
+                              <TooltipProvider
+                                delayDuration={150}
+                                skipDelayDuration={0}
+                              >
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
