@@ -382,10 +382,13 @@ const NewsTrackerUI = () => {
                     )}
                   </Button>
                   {articles.length > 0 && (
-                    <ExportButton
-                      articles={filteredArticles}
-                      companies={companies}
-                    />
+                    <ExportButton 
+                    companies={companies}
+                    timeRange={timeRange}
+                    selectedSources={selectedSources}
+                    selectedDomains={selectedDomains}
+                    totalArticles={totalArticles}
+                  />
                   )}
                 </div>
               </CardContent>

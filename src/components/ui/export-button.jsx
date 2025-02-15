@@ -3,16 +3,38 @@ import * as XLSX from 'xlsx'
 import { Button } from './button'
 import { Download } from 'lucide-react'
 import { Card, CardContent } from './card'
+import api from '../../lib/axios'
 
-const ExportButton = ({ articles, companies }) => {
+const ExportButton = ({ companies, timeRange, selectedSources, selectedDomains, totalArticles }) => {
   const [isExporting, setIsExporting] = useState(false)
+
+  const fetchAllArticles = async () => {
+    try {
+      const response = await api.post("/api/news", {
+        companies,
+        timeRange: parseInt(timeRange),
+        sources: selectedSources,
+        domains: selectedDomains,
+        page: 1,
+        pageSize: totalArticles // Request all articles in one go
+      })
+
+      return response.data.data.articles
+    } catch (error) {
+      console.error("Error fetching all articles:", error)
+      throw new Error("Failed to fetch all articles for export")
+    }
+  }
 
   const handleExport = async () => {
     try {
       setIsExporting(true)
 
+      // Fetch all articles first
+      const allArticles = await fetchAllArticles()
+
       // Format the articles for export
-      const formattedData = articles.map(article => ({
+      const formattedData = allArticles.map(article => ({
         Title: article.title,
         Description: article.description,
         Company: article.company,
@@ -42,12 +64,13 @@ const ExportButton = ({ articles, companies }) => {
       XLSX.writeFile(workbook, `news_results_${companies.join('_')}_${Date.now()}.xlsx`)
     } catch (error) {
       console.error('Export error:', error)
+      // Here you could add a toast notification for the error
     } finally {
       setIsExporting(false)
     }
   }
 
-  if (!articles.length) return null
+  if (!totalArticles) return null
 
   return (
         <Button
@@ -58,12 +81,12 @@ const ExportButton = ({ articles, companies }) => {
           {isExporting ? (
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              Exporting...
+              Exporting {totalArticles} articles...
             </div>
           ) : (
             <>
               <Download className="h-4 w-4 mr-2" />
-              Export Results ({articles.length} articles)
+              Export All Results ({totalArticles} articles)
             </>
           )}
         </Button>
